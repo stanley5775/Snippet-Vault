@@ -1,27 +1,37 @@
 'use client';
 
 import { ArrowLeft, Copy, Star, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { TYPE_LABEL } from '@/lib/assetTypes';
 import { copyText } from '@/lib/clipboard';
 import { useVaultStore } from '@/store';
 import type { Asset } from '@/types';
 import { CodeView } from './CodeView';
-import { TypeBadge } from './TypeBadge';
+
+const ghostButton =
+  'rounded p-2 text-muted transition-colors hover:bg-hover hover:text-ink';
 
 export function AssetDetail({ asset, onBack }: { asset: Asset; onBack: () => void }) {
   const toggleFavorite = useVaultStore((s) => s.toggleFavorite);
   const removeAsset = useVaultStore((s) => s.removeAsset);
   const pushToast = useVaultStore((s) => s.pushToast);
+  const [flash, setFlash] = useState(false);
 
   async function handleCopy() {
     const ok = await copyText(asset.content);
-    pushToast(
-      ok
-        ? { message: 'Copied to clipboard', variant: 'success', duration: 1800 }
-        : {
-            message: 'Copy failed. Select the text and copy it manually.',
-            variant: 'error',
-          },
-    );
+    if (!ok) {
+      pushToast({
+        message: "Couldn't copy. Select the text and copy it manually.",
+        variant: 'error',
+      });
+      return;
+    }
+    const lines = asset.content.replace(/\n$/, '').split('\n').length;
+    pushToast({
+      message: lines > 1 ? `Copied ${lines} lines` : 'Copied',
+      duration: 1800,
+    });
+    setFlash(true);
   }
 
   async function handleDelete() {
@@ -29,77 +39,80 @@ export function AssetDetail({ asset, onBack }: { asset: Asset; onBack: () => voi
       await removeAsset(asset.id);
       onBack();
     } catch {
-      // the store already showed an error toast
+      // the store already reported the failure
     }
   }
 
-  const iconButton =
-    'rounded-md p-2 text-neutral-600 transition hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800';
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex items-center gap-2 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+      <header className="flex items-start gap-3 border-b border-line px-5 py-4 md:px-8">
         <button
           type="button"
           onClick={onBack}
-          aria-label="Back"
-          className={`${iconButton} md:hidden`}
+          aria-label="Back to list"
+          className={`${ghostButton} -ml-2 md:hidden`}
         >
           <ArrowLeft className="size-4" />
         </button>
-        <h1 className="truncate text-lg font-semibold">{asset.title}</h1>
-        <TypeBadge type={asset.type} />
-        <div className="ml-auto flex items-center gap-1">
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-xl font-semibold tracking-tight">{asset.title}</h1>
+          <p className="mt-1 flex items-center gap-2 text-sm text-muted">
+            {TYPE_LABEL[asset.type]}
+            <span className="font-code text-xs">{asset.language}</span>
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
             aria-label={asset.favorite ? 'Remove from favorites' : 'Add to favorites'}
             onClick={() => void toggleFavorite(asset.id).catch(() => undefined)}
-            className={iconButton}
+            className={ghostButton}
           >
             <Star
-              className={`size-4 ${asset.favorite ? 'fill-amber-400 text-amber-400' : ''}`}
+              className={`size-4 ${asset.favorite ? 'fill-accent text-accent' : ''}`}
             />
           </button>
           <button
             type="button"
-            aria-label="Delete"
+            aria-label="Delete asset"
             onClick={handleDelete}
-            className={iconButton}
+            className={ghostButton}
           >
             <Trash2 className="size-4" />
           </button>
           <button
             type="button"
             onClick={handleCopy}
-            className="ml-1 inline-flex items-center gap-2 rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
+            className="ml-1 inline-flex items-center gap-2 rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink transition-opacity hover:opacity-90"
           >
-            <Copy className="size-4" /> Copy
+            <Copy className="size-4" />
+            Copy
           </button>
         </div>
       </header>
 
-      <div className="flex-1 space-y-4 overflow-y-auto p-4 md:p-6">
-        {asset.description && (
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            {asset.description}
-          </p>
-        )}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="rounded bg-neutral-100 px-2 py-0.5 font-mono dark:bg-neutral-800">
-            {asset.language}
-          </span>
-          {asset.tags.map((t) => (
-            <span key={t} className="text-neutral-500">
-              #{t}
-            </span>
-          ))}
-        </div>
-        <div className="overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900">
-          <CodeView
-            key={`${asset.id}:${asset.updatedAt}`}
-            code={asset.content}
-            language={asset.language}
-          />
+      <div className="flex-1 overflow-y-auto px-5 py-6 md:px-8">
+        <div className="max-w-3xl space-y-4">
+          {asset.description && (
+            <p className="max-w-prose text-sm leading-6">{asset.description}</p>
+          )}
+          {asset.tags.length > 0 && (
+            <ul className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted">
+              {asset.tags.map((t) => (
+                <li key={t}>#{t}</li>
+              ))}
+            </ul>
+          )}
+          <div
+            className={`overflow-hidden rounded-md border border-line bg-surface ${flash ? 'copy-flash' : ''}`}
+            onAnimationEnd={() => setFlash(false)}
+          >
+            <CodeView
+              key={`${asset.id}:${asset.updatedAt}`}
+              code={asset.content}
+              language={asset.language}
+            />
+          </div>
         </div>
       </div>
     </div>

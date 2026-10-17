@@ -4,34 +4,39 @@ import { useEffect, type ReactNode } from 'react';
 import { AssetDetail } from '@/components/assets/AssetDetail';
 import { AssetList } from '@/components/assets/AssetList';
 import { Sidebar } from '@/components/Sidebar';
-import { Toaster } from '@/components/ui/Toaster';
+import { StatusBar } from '@/components/StatusBar';
 import { useAssetList } from '@/hooks/useAssetList';
 import { useWorkspaceParams, type View } from '@/hooks/useWorkspaceParams';
 import { claimFirstRunSeed, seedExamples } from '@/lib/seed';
 import { useVaultStore } from '@/store';
 
+const primaryButton =
+  'rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink transition-opacity hover:opacity-90';
+
 function Centered({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+    <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
       <h2 className="text-base font-semibold">{title}</h2>
-      {children && <div className="max-w-sm text-sm text-neutral-500">{children}</div>}
+      {children && <div className="max-w-xs text-sm text-muted">{children}</div>}
     </div>
   );
 }
 
 function EmptyList({ view }: { view: View }) {
   if (view === 'favorites') {
-    return <Centered title="No favorites yet">Star an asset to pin it here.</Centered>;
+    return (
+      <Centered title="No favorites yet">Star an asset and it shows up here.</Centered>
+    );
   }
   return (
-    <Centered title="Your vault is empty">
-      <p>Save your first snippet, or start with a few examples.</p>
+    <Centered title="Nothing here yet">
+      <p>Load a few examples to see how the vault works.</p>
       <button
         type="button"
         onClick={() => void seedExamples().catch(() => undefined)}
-        className="mt-3 rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+        className={`${primaryButton} mt-4`}
       >
-        Add example snippets
+        Load examples
       </button>
     </Centered>
   );
@@ -60,61 +65,64 @@ export function Workspace() {
   const detailOpen = Boolean(id);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden md:flex-row">
-      <Sidebar
-        view={view}
-        counts={{ all: assets.length, favorites: favorites.length }}
-        onChange={setView}
-        className={`${detailOpen ? 'hidden md:flex' : 'flex'} border-b md:border-b-0`}
-      />
+    <div className="flex h-dvh flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <Sidebar
+          view={view}
+          counts={{ all: assets.length, favorites: favorites.length }}
+          onChange={setView}
+          className={`${detailOpen ? 'hidden md:flex' : 'flex'} border-b md:border-b-0`}
+        />
 
-      {view === 'templates' ? (
-        <Centered title="Templates">
-          Project Starter templates arrive in a later milestone.
-        </Centered>
-      ) : (
-        <>
-          <section
-            className={`${detailOpen ? 'hidden md:flex' : 'flex'} min-h-0 flex-1 flex-col border-neutral-200 md:w-80 md:flex-none md:border-r dark:border-neutral-800`}
-          >
-            {status === 'error' ? (
-              <p className="p-4 text-sm text-red-600">{error}</p>
-            ) : status !== 'ready' ? (
-              <p className="p-4 text-sm text-neutral-500">Loading your vault…</p>
-            ) : visible.length === 0 ? (
-              <EmptyList view={view} />
-            ) : (
-              <AssetList assets={visible} selectedId={id} onSelect={selectAsset} />
-            )}
-          </section>
+        {view === 'templates' ? (
+          <div className="flex flex-1 bg-panel">
+            <Centered title="Project Starter">
+              Bundle your snippets into a downloadable ZIP. Coming soon.
+            </Centered>
+          </div>
+        ) : (
+          <>
+            <section
+              className={`${detailOpen ? 'hidden md:flex' : 'flex'} min-h-0 flex-1 flex-col bg-panel md:w-80 md:flex-none md:border-r md:border-line`}
+            >
+              {status === 'error' ? (
+                <p className="p-4 text-sm text-danger">{error}</p>
+              ) : status !== 'ready' ? (
+                <p className="p-4 text-sm text-muted">Loading your vault…</p>
+              ) : visible.length === 0 ? (
+                <EmptyList view={view} />
+              ) : (
+                <AssetList assets={visible} selectedId={id} onSelect={selectAsset} />
+              )}
+            </section>
 
-          <main
-            className={`${detailOpen ? 'flex' : 'hidden md:flex'} min-h-0 min-w-0 flex-1 flex-col`}
-          >
-            {selected ? (
-              <AssetDetail asset={selected} onBack={() => selectAsset(null)} />
-            ) : id && status === 'ready' ? (
-              <Centered title="Asset not found">
-                <p>It may have been deleted.</p>
-                <button
-                  type="button"
-                  onClick={() => selectAsset(null)}
-                  className="mt-3 underline"
-                >
-                  Back to list
-                </button>
-              </Centered>
-            ) : (
-              <Centered title="Welcome to Snippet Vault">
-                Pick an asset from the list to preview and copy it. Everything is stored
-                locally in this browser.
-              </Centered>
-            )}
-          </main>
-        </>
-      )}
-
-      <Toaster />
+            <main
+              className={`${detailOpen ? 'flex' : 'hidden md:flex'} min-h-0 min-w-0 flex-1 flex-col bg-panel`}
+            >
+              {selected ? (
+                <AssetDetail asset={selected} onBack={() => selectAsset(null)} />
+              ) : id && status === 'ready' ? (
+                <Centered title="That asset is gone">
+                  <p>It may have been deleted.</p>
+                  <button
+                    type="button"
+                    onClick={() => selectAsset(null)}
+                    className="mt-3 text-accent hover:underline"
+                  >
+                    Back to the list
+                  </button>
+                </Centered>
+              ) : (
+                <Centered title="Pick an asset">
+                  Choose one from the list to read and copy it. Everything you save stays
+                  in this browser.
+                </Centered>
+              )}
+            </main>
+          </>
+        )}
+      </div>
+      <StatusBar assetCount={assets.length} />
     </div>
   );
 }

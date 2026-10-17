@@ -1,38 +1,115 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  color-scheme: light dark;
+  --surface: #f6f7f8;
+  --panel: #ffffff;
+  --line: #dde1e5;
+  --ink: #15181b;
+  --muted: #646d76;
+  --accent: #2b50ff;
+  --accent-ink: #ffffff;
+  --wash: #edf0ff;
+  --hover: #eef0f2;
+  --danger: #c42b2b;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --t-snippet: #3ba676;
+  --t-tailwind: #2ba6cb;
+  --t-css: #8b6fe0;
+  --t-svg: #d4962c;
+  --t-palette: #d6557a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --surface: #14171a;
+    --panel: #1b1f23;
+    --line: #2a3036;
+    --ink: #e6e8ea;
+    --muted: #8b949e;
+    --accent: #7b93ff;
+    --accent-ink: #0d1020;
+    --wash: #1c2342;
+    --hover: #20252a;
+    --danger: #ff7a7a;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+@theme inline {
+  --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-code: var(--font-jetbrains), ui-monospace, monospace;
+  --color-surface: var(--surface);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-wash: var(--wash);
+  --color-hover: var(--hover);
+  --color-danger: var(--danger);
+  --color-t-snippet: var(--t-snippet);
+  --color-t-tailwind: var(--t-tailwind);
+  --color-t-css: var(--t-css);
+  --color-t-svg: var(--t-svg);
+  --color-t-palette: var(--t-palette);
 }
 
+body {
+  background-color: var(--surface);
+  color: var(--ink);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Code view: Shiki colors via CSS variables, plus line numbers */
 .shiki {
   background-color: transparent !important;
+  margin: 0;
 }
 .shiki span {
   color: var(--shiki-light);
 }
+.shiki code {
+  counter-reset: line;
+}
+.shiki .line::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 2.5ch;
+  margin-right: 2ch;
+  text-align: right;
+  color: var(--muted);
+  opacity: 0.7;
+  user-select: none;
+}
 @media (prefers-color-scheme: dark) {
   .shiki span {
     color: var(--shiki-dark);
+  }
+}
+
+/* Copy confirmation: a brief outline on the code block */
+@keyframes copy-flash {
+  from { box-shadow: 0 0 0 2px var(--accent); }
+  to { box-shadow: 0 0 0 2px transparent; }
+}
+.copy-flash {
+  animation: copy-flash 700ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }

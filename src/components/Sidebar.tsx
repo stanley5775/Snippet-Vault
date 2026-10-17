@@ -18,25 +18,32 @@ export function Sidebar({ view, counts, onChange, className = '' }: Props) {
 
   return (
     <nav
-      className={`gap-1 border-neutral-200 p-3 md:w-56 md:flex-col md:border-r dark:border-neutral-800 ${className}`}
+      className={`gap-0.5 border-line bg-surface p-2 md:w-48 md:flex-col md:border-r md:p-3 ${className}`}
     >
-      <p className="hidden px-2 pb-3 text-sm font-semibold md:block">Snippet Vault</p>
-      {items.map((item) => (
-        <button
-          key={item.view}
-          type="button"
-          onClick={() => onChange(item.view)}
-          aria-current={view === item.view ? 'page' : undefined}
-          className={`flex items-center justify-between rounded-md px-3 py-1.5 text-sm transition hover:bg-neutral-100 dark:hover:bg-neutral-900 ${
-            view === item.view ? 'bg-neutral-100 font-medium dark:bg-neutral-900' : ''
-          }`}
-        >
-          {item.label}
-          {item.count !== undefined && (
-            <span className="ml-3 text-xs text-neutral-500">{item.count}</span>
-          )}
-        </button>
-      ))}
+      <p className="hidden px-2.5 pt-1 pb-4 text-[15px] font-semibold tracking-tight md:block">
+        Snippet Vault
+      </p>
+      {items.map((item) => {
+        const active = view === item.view;
+        return (
+          <button
+            key={item.view}
+            type="button"
+            onClick={() => onChange(item.view)}
+            aria-current={active ? 'page' : undefined}
+            className={`flex items-center justify-between gap-3 rounded px-2.5 py-1.5 text-left text-sm transition-colors ${
+              active
+                ? 'bg-wash font-medium text-ink'
+                : 'text-muted hover:bg-hover hover:text-ink'
+            }`}
+          >
+            {item.label}
+            {item.count !== undefined && (
+              <span className="text-xs text-muted tabular-nums">{item.count}</span>
+            )}
+          </button>
+        );
+      })}
     </nav>
   );
 }

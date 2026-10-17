@@ -20,12 +20,14 @@ export function CodeView({ code, language }: { code: string; language: string })
 
   if (html === null) {
     return (
-      <pre className="overflow-x-auto p-4 font-mono text-sm whitespace-pre">{code}</pre>
+      <pre className="overflow-x-auto p-4 font-code text-[13px] leading-6 whitespace-pre">
+        {code}
+      </pre>
     );
   }
   return (
     <div
-      className="[&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:p-4 [&_pre]:text-sm"
+      className="font-code [&_pre]:overflow-x-auto [&_pre]:p-4 [&_pre]:text-[13px] [&_pre]:leading-6"
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

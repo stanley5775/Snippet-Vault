@@ -1,8 +1,8 @@
 'use client';
 
 import { Star } from 'lucide-react';
+import { TYPE_EDGE, TYPE_LABEL } from '@/lib/assetTypes';
 import type { Asset } from '@/types';
-import { TypeBadge } from './TypeBadge';
 
 function excerpt(content: string) {
   const line = content.split('\n').find((l) => l.trim()) ?? '';
@@ -17,42 +17,39 @@ interface Props {
 
 export function AssetList({ assets, selectedId, onSelect }: Props) {
   return (
-    <ul className="flex-1 divide-y divide-neutral-200 overflow-y-auto dark:divide-neutral-800">
+    <ul className="flex-1 overflow-y-auto">
       {assets.map((a) => {
         const selected = a.id === selectedId;
         return (
-          <li key={a.id}>
+          <li key={a.id} className="border-b border-line">
             <button
               type="button"
               onClick={() => onSelect(a.id)}
               aria-current={selected ? 'true' : undefined}
-              className={`w-full px-4 py-3 text-left transition hover:bg-neutral-100 dark:hover:bg-neutral-900 ${
-                selected ? 'bg-neutral-100 dark:bg-neutral-900' : ''
+              className={`relative block w-full py-2.5 pr-4 pl-5 text-left transition-colors ${
+                selected ? 'bg-wash' : 'hover:bg-hover'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <span className="truncate font-medium">{a.title}</span>
+              <span
+                aria-hidden
+                className={`absolute inset-y-0 left-0 w-[3px] ${TYPE_EDGE[a.type]}`}
+              />
+              <span className="sr-only">{TYPE_LABEL[a.type]}: </span>
+              <span className="flex items-baseline gap-2">
+                <span className="truncate text-sm font-medium">{a.title}</span>
                 {a.favorite && (
                   <Star
                     aria-label="Favorite"
-                    className="size-3.5 shrink-0 fill-amber-400 text-amber-400"
+                    className="size-3 shrink-0 fill-accent text-accent"
                   />
                 )}
-                <span className="ml-auto shrink-0">
-                  <TypeBadge type={a.type} />
+                <span className="ml-auto shrink-0 font-code text-xs text-muted">
+                  {a.language}
                 </span>
-              </div>
-              <p className="mt-1 truncate font-mono text-xs text-neutral-500">
+              </span>
+              <span className="mt-0.5 block truncate font-code text-xs text-muted">
                 {excerpt(a.content)}
-              </p>
-              {a.tags.length > 0 && (
-                <p className="mt-1 truncate text-xs text-neutral-400">
-                  {a.tags
-                    .slice(0, 4)
-                    .map((t) => `#${t}`)
-                    .join(' ')}
-                </p>
-              )}
+              </span>
             </button>
           </li>
         );
