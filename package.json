@@ -13,9 +13,11 @@
   },
   "dependencies": {
     "dexie": "^4.4.6",
+    "lucide-react": "^1.58.0",
     "next": "16.4.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "shiki": "^4.5.0",
     "zod": "^4.6.7",
     "zustand": "^5.0.15"
   },
