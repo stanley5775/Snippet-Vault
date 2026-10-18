@@ -1,6 +1,7 @@
 'use client';
 
 import { Star } from 'lucide-react';
+import { useEffect } from 'react';
 import { TYPE_EDGE, TYPE_LABEL } from '@/lib/assetTypes';
 import type { Asset } from '@/types';
 
@@ -16,6 +17,15 @@ interface Props {
 }
 
 export function AssetList({ assets, selectedId, onSelect }: Props) {
+  // Keep the selected row visible when moving with J/K or the arrow keys
+  useEffect(() => {
+    if (selectedId) {
+      document
+        .getElementById(`asset-row-${selectedId}`)
+        ?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [selectedId]);
+
   return (
     <ul className="flex-1 overflow-y-auto">
       {assets.map((a) => {
@@ -24,6 +34,8 @@ export function AssetList({ assets, selectedId, onSelect }: Props) {
           <li key={a.id} className="border-b border-line">
             <button
               type="button"
+              id={`asset-row-${a.id}`}
+              data-asset-id={a.id}
               onClick={() => onSelect(a.id)}
               aria-current={selected ? 'true' : undefined}
               className={`relative block w-full py-2.5 pr-4 pl-5 text-left transition-colors ${

@@ -36,7 +36,8 @@ export function useWorkspaceParams() {
     id,
     view,
     mode,
-    selectAsset: (assetId: string | null) => update({ id: assetId, mode: null }),
+    selectAsset: (assetId: string | null, options?: { replace?: boolean }) =>
+      update({ id: assetId, mode: null }, options?.replace),
     setView: (v: View) => update({ view: v === 'all' ? null : v, id: null, mode: null }),
     startNew: () => update({ id: null, mode: 'new' }),
     startEdit: (assetId: string) => update({ id: assetId, mode: 'edit' }),

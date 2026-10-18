@@ -1,16 +1,24 @@
 'use client';
 
 import { Plus } from 'lucide-react';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { AssetDetail } from '@/components/assets/AssetDetail';
 import { AssetEditor } from '@/components/assets/AssetEditor';
 import { AssetList } from '@/components/assets/AssetList';
+import {
+  CommandPalette,
+  type PaletteCommand,
+} from '@/components/command-palette/CommandPalette';
 import { SearchBar } from '@/components/SearchBar';
+import { ShortcutsDialog } from '@/components/ShortcutsDialog';
 import { Sidebar } from '@/components/Sidebar';
-import { StatusBar } from '@/components/StatusBar';
+import { StatusBar, type Hint } from '@/components/StatusBar';
 import { useAssetList } from '@/hooks/useAssetList';
+import { useHotkeys, type Hotkey } from '@/hooks/useHotkeys';
+import { useModLabel } from '@/hooks/useModLabel';
 import { useSearchResults } from '@/hooks/useSearchResults';
 import { useWorkspaceParams, type View } from '@/hooks/useWorkspaceParams';
+import { copyAsset } from '@/lib/actions';
 import { claimFirstRunSeed, seedExamples } from '@/lib/seed';
 import { useVaultStore } from '@/store';
 
@@ -64,16 +72,28 @@ function NoMatches({ query }: { query: string }) {
   );
 }
 
+function focusSearch() {
+  const el = document.getElementById('asset-search') as HTMLInputElement | null;
+  el?.focus();
+  el?.select();
+}
+
 export function Workspace() {
   const init = useVaultStore((s) => s.init);
   const status = useVaultStore((s) => s.status);
   const error = useVaultStore((s) => s.error);
   const query = useVaultStore((s) => s.query);
+  const toggleFavorite = useVaultStore((s) => s.toggleFavorite);
+  const removeAsset = useVaultStore((s) => s.removeAsset);
   const assets = useAssetList();
   const { id, view, mode, selectAsset, setView, startNew, startEdit, finishEditing } =
     useWorkspaceParams();
   const visible = useSearchResults(view);
   const selected = useVaultStore((s) => (id ? s.assets[id] : undefined));
+  const mod = useModLabel();
+
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   useEffect(() => {
     void init();
@@ -85,9 +105,175 @@ export function Workspace() {
     if (claimFirstRunSeed(hasAssets)) void seedExamples().catch(() => undefined);
   }, [status]);
 
+  const filtering = query.trim().length > 0;
+
+  // While searching on desktop, keep the top result selected so Enter has a target.
+  useEffect(() => {
+    if (!filtering || mode !== 'view' || visible.length === 0) return;
+    if (visible.some((a) => a.id === id)) return;
+    if (!window.matchMedia('(min-width: 768px)').matches) return;
+    selectAsset(visible[0].id, { replace: true });
+  }, [filtering, mode, visible, id, selectAsset]);
+
+  const selectedIndex = visible.findIndex((a) => a.id === id);
+
+  function moveSelection(delta: number) {
+    if (visible.length === 0) return;
+    const next =
+      selectedIndex === -1
+        ? delta > 0
+          ? 0
+          : visible.length - 1
+        : Math.min(Math.max(selectedIndex + delta, 0), visible.length - 1);
+    selectAsset(visible[next].id, { replace: true });
+  }
+
+  /** Enter in the search box: copy the highlighted result, or the top one. */
+  function copyHighlighted() {
+    const target = visible.find((a) => a.id === id) ?? visible[0];
+    if (target) void copyAsset(target);
+  }
+
+  function onEnter(event: KeyboardEvent) {
+    // Enter on a focused row that isn't selected yet selects it instead of copying another asset
+    const row = (event.target as HTMLElement | null)?.closest?.('[data-asset-id]');
+    const rowId = row instanceof HTMLElement ? row.dataset.assetId : undefined;
+    if (rowId && rowId !== id) {
+      selectAsset(rowId);
+      return;
+    }
+    if (selected) void copyAsset(selected);
+  }
+
+  function editSelected() {
+    if (selected) startEdit(selected.id);
+  }
+
+  function favoriteSelected() {
+    if (selected) void toggleFavorite(selected.id).catch(() => undefined);
+  }
+
+  async function deleteSelected() {
+    if (!selected) return;
+    const neighbor =
+      selectedIndex >= 0
+        ? (visible[selectedIndex + 1] ?? visible[selectedIndex - 1])
+        : undefined;
+    try {
+      await removeAsset(selected.id);
+      selectAsset(neighbor?.id ?? null, { replace: true });
+    } catch {
+      // the status bar already shows the error
+    }
+  }
+
+  function closeSelected() {
+    if (id) selectAsset(null);
+  }
+
+  const browsing = mode === 'view' && view !== 'templates';
+
+  const bindings: Hotkey[] = [
+    { keys: 'mod+k', allowInInputs: true, run: () => setPaletteOpen(true) },
+    { keys: '?', run: () => setHelpOpen(true) },
+    { keys: '/', run: focusSearch },
+    ...(browsing
+      ? [
+          { keys: 'j', repeat: true, run: () => moveSelection(1) },
+          { keys: 'k', repeat: true, run: () => moveSelection(-1) },
+          { keys: 'Enter', skipOnButtons: true, run: onEnter },
+          { keys: 'e', run: editSelected },
+          { keys: 'n', run: startNew },
+          { keys: 'f', run: favoriteSelected },
+          { keys: 'Delete', run: () => void deleteSelected() },
+          { keys: 'mod+Backspace', run: () => void deleteSelected() },
+          { keys: 'Escape', run: closeSelected },
+        ]
+      : []),
+  ];
+  useHotkeys(bindings, !paletteOpen && !helpOpen);
+
+  const commands: PaletteCommand[] = [
+    { id: 'new', group: 'Assets', label: 'New asset', keys: 'N', run: startNew },
+    {
+      id: 'copy',
+      group: 'Assets',
+      label: 'Copy selected asset',
+      keys: 'Enter',
+      disabled: !selected,
+      run: () => selected && void copyAsset(selected),
+    },
+    {
+      id: 'edit',
+      group: 'Assets',
+      label: 'Edit selected asset',
+      keys: 'E',
+      disabled: !selected,
+      run: editSelected,
+    },
+    {
+      id: 'favorite',
+      group: 'Assets',
+      label: 'Toggle favorite',
+      keys: 'F',
+      disabled: !selected,
+      run: favoriteSelected,
+    },
+    {
+      id: 'delete',
+      group: 'Assets',
+      label: 'Delete selected asset',
+      keys: 'Del',
+      disabled: !selected,
+      run: () => void deleteSelected(),
+    },
+    { id: 'go-all', group: 'Go to', label: 'All assets', run: () => setView('all') },
+    {
+      id: 'go-favorites',
+      group: 'Go to',
+      label: 'Favorites',
+      run: () => setView('favorites'),
+    },
+    {
+      id: 'go-templates',
+      group: 'Go to',
+      label: 'Templates',
+      run: () => setView('templates'),
+    },
+    {
+      id: 'examples',
+      group: 'Vault',
+      label: 'Load example snippets',
+      run: () => void seedExamples().catch(() => undefined),
+    },
+    {
+      id: 'shortcuts',
+      group: 'Help',
+      label: 'Keyboard shortcuts',
+      keys: '?',
+      run: () => setHelpOpen(true),
+    },
+  ];
+
+  const hints: Hint[] = [
+    ...(mode !== 'view'
+      ? [{ keys: mod('S'), label: 'save' }]
+      : selected
+        ? [
+            { keys: 'Enter', label: 'copy' },
+            { keys: 'E', label: 'edit' },
+            { keys: 'F', label: 'favorite' },
+          ]
+        : [
+            { keys: 'N', label: 'new' },
+            { keys: '/', label: 'search' },
+          ]),
+    { keys: mod('K'), label: 'commands' },
+    ...(mode === 'view' ? [{ keys: '?', label: 'shortcuts' }] : []),
+  ];
+
   const favoritesCount = assets.filter((a) => a.favorite).length;
   const detailOpen = Boolean(id) || mode === 'new';
-  const filtering = query.trim().length > 0;
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
@@ -116,7 +302,7 @@ export function Workspace() {
                 <p className="p-4 text-sm text-muted">Loading your vault…</p>
               ) : (
                 <>
-                  <SearchBar />
+                  <SearchBar onMove={moveSelection} onSubmit={copyHighlighted} />
                   <button
                     type="button"
                     onClick={startNew}
@@ -182,7 +368,15 @@ export function Workspace() {
       <StatusBar
         assetCount={assets.length}
         matchCount={filtering ? visible.length : undefined}
+        hints={hints}
       />
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        commands={commands}
+      />
+      <ShortcutsDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }
+

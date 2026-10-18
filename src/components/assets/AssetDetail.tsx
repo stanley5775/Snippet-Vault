@@ -1,9 +1,9 @@
 'use client';
 
 import { ArrowLeft, Copy, Pencil, Star, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { COPIED_EVENT, copyAsset } from '@/lib/actions';
 import { TYPE_LABEL } from '@/lib/assetTypes';
-import { copyText } from '@/lib/clipboard';
 import { useVaultStore } from '@/store';
 import type { Asset } from '@/types';
 import { AssetPreview } from './AssetPreview';
@@ -21,25 +21,23 @@ interface Props {
 export function AssetDetail({ asset, onBack, onEdit }: Props) {
   const toggleFavorite = useVaultStore((s) => s.toggleFavorite);
   const removeAsset = useVaultStore((s) => s.removeAsset);
-  const pushToast = useVaultStore((s) => s.pushToast);
-  const [flash, setFlash] = useState(false);
+  const codeRef = useRef<HTMLDivElement>(null);
 
-  async function handleCopy() {
-    const ok = await copyText(asset.content);
-    if (!ok) {
-      pushToast({
-        message: "Couldn't copy. Select the text and copy it manually.",
-        variant: 'error',
-      });
-      return;
+  // Brief outline on the code block whenever an asset is copied (button, Enter, or search)
+  useEffect(() => {
+    function flash() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      codeRef.current?.animate(
+        [
+          { boxShadow: '0 0 0 2px var(--accent)' },
+          { boxShadow: '0 0 0 2px transparent' },
+        ],
+        { duration: 700, easing: 'ease-out' },
+      );
     }
-    const lines = asset.content.replace(/\n$/, '').split('\n').length;
-    pushToast({
-      message: lines > 1 ? `Copied ${lines} lines` : 'Copied',
-      duration: 1800,
-    });
-    setFlash(true);
-  }
+    window.addEventListener(COPIED_EVENT, flash);
+    return () => window.removeEventListener(COPIED_EVENT, flash);
+  }, []);
 
   async function handleDelete() {
     try {
@@ -97,7 +95,7 @@ export function AssetDetail({ asset, onBack, onEdit }: Props) {
           </button>
           <button
             type="button"
-            onClick={handleCopy}
+            onClick={() => void copyAsset(asset)}
             className="ml-1 inline-flex items-center gap-2 rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink transition-opacity hover:opacity-90"
           >
             <Copy className="size-4" />
@@ -120,8 +118,8 @@ export function AssetDetail({ asset, onBack, onEdit }: Props) {
           )}
           <AssetPreview type={asset.type} content={asset.content} />
           <div
-            className={`overflow-hidden rounded-md border border-line bg-surface ${flash ? 'copy-flash' : ''}`}
-            onAnimationEnd={() => setFlash(false)}
+            ref={codeRef}
+            className="overflow-hidden rounded-md border border-line bg-surface"
           >
             <CodeView
               key={`${asset.id}:${asset.updatedAt}`}

@@ -112,14 +112,14 @@ body {
   }
 }
 
-/* Copy confirmation: a brief outline on the code block */
+/* Copy confirmation: a brief outline on the code block
 @keyframes copy-flash {
   from { box-shadow: 0 0 0 2px var(--accent); }
   to { box-shadow: 0 0 0 2px transparent; }
 }
 .copy-flash {
   animation: copy-flash 700ms ease-out;
-}
+} */
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -1,7 +1,13 @@
 'use client';
 
 import { useEffect } from 'react';
+import { Kbd } from '@/components/ui/Kbd';
 import { useVaultStore, type Toast } from '@/store';
+
+export interface Hint {
+  keys: string;
+  label: string;
+}
 
 /** Each toast expires on its own clock, even while a newer one is showing. */
 function Expiry({ toast }: { toast: Toast }) {
@@ -13,16 +19,17 @@ function Expiry({ toast }: { toast: Toast }) {
   return null;
 }
 
-export function StatusBar({
-  assetCount,
-  matchCount,
-}: {
+interface Props {
   assetCount: number;
   matchCount?: number;
-}) {
+  hints: Hint[];
+}
+
+export function StatusBar({ assetCount, matchCount, hints }: Props) {
   const toasts = useVaultStore((s) => s.toasts);
   const dismiss = useVaultStore((s) => s.dismissToast);
   const current = toasts.at(-1);
+  const noun = assetCount === 1 ? 'asset' : 'assets';
 
   async function handleAction() {
     if (!current?.action) return;
@@ -64,12 +71,19 @@ export function StatusBar({
         ) : (
           <span className="tabular-nums">
             {matchCount === undefined
-              ? `${assetCount} ${assetCount === 1 ? 'asset' : 'assets'}`
-              : `${matchCount} of ${assetCount} ${assetCount === 1 ? 'asset' : 'assets'}`}
+              ? `${assetCount} ${noun}`
+              : `${matchCount} of ${assetCount} ${noun}`}
           </span>
         )}
       </div>
-      <span className="hidden md:inline">Stored in this browser</span>
+      <div className="hidden shrink-0 items-center gap-4 md:flex">
+        {hints.map((hint) => (
+          <span key={hint.label} className="flex items-center gap-1.5">
+            <Kbd>{hint.keys}</Kbd>
+            {hint.label}
+          </span>
+        ))}
+      </div>
     </footer>
   );
 }
