@@ -1,7 +1,9 @@
 'use client';
 
+import { Plus } from 'lucide-react';
 import { useEffect, type ReactNode } from 'react';
 import { AssetDetail } from '@/components/assets/AssetDetail';
+import { AssetEditor } from '@/components/assets/AssetEditor';
 import { AssetList } from '@/components/assets/AssetList';
 import { Sidebar } from '@/components/Sidebar';
 import { StatusBar } from '@/components/StatusBar';
@@ -30,7 +32,7 @@ function EmptyList({ view }: { view: View }) {
   }
   return (
     <Centered title="Nothing here yet">
-      <p>Load a few examples to see how the vault works.</p>
+      <p>Create your first asset, or load a few examples to see how the vault works.</p>
       <button
         type="button"
         onClick={() => void seedExamples().catch(() => undefined)}
@@ -47,7 +49,8 @@ export function Workspace() {
   const status = useVaultStore((s) => s.status);
   const error = useVaultStore((s) => s.error);
   const assets = useAssetList();
-  const { id, view, selectAsset, setView } = useWorkspaceParams();
+  const { id, view, mode, selectAsset, setView, startNew, startEdit, finishEditing } =
+    useWorkspaceParams();
   const selected = useVaultStore((s) => (id ? s.assets[id] : undefined));
 
   useEffect(() => {
@@ -62,7 +65,7 @@ export function Workspace() {
 
   const favorites = assets.filter((a) => a.favorite);
   const visible = view === 'favorites' ? favorites : assets;
-  const detailOpen = Boolean(id);
+  const detailOpen = Boolean(id) || mode === 'new';
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
@@ -89,18 +92,47 @@ export function Workspace() {
                 <p className="p-4 text-sm text-danger">{error}</p>
               ) : status !== 'ready' ? (
                 <p className="p-4 text-sm text-muted">Loading your vault…</p>
-              ) : visible.length === 0 ? (
-                <EmptyList view={view} />
               ) : (
-                <AssetList assets={visible} selectedId={id} onSelect={selectAsset} />
+                <>
+                  <button
+                    type="button"
+                    onClick={startNew}
+                    className="flex w-full items-center gap-2 border-b border-line px-4 py-2.5 text-left text-sm text-accent transition-colors hover:bg-hover"
+                  >
+                    <Plus className="size-4" />
+                    New asset
+                  </button>
+                  {visible.length === 0 ? (
+                    <EmptyList view={view} />
+                  ) : (
+                    <AssetList assets={visible} selectedId={id} onSelect={selectAsset} />
+                  )}
+                </>
               )}
             </section>
 
             <main
               className={`${detailOpen ? 'flex' : 'hidden md:flex'} min-h-0 min-w-0 flex-1 flex-col bg-panel`}
             >
-              {selected ? (
-                <AssetDetail asset={selected} onBack={() => selectAsset(null)} />
+              {mode === 'new' ? (
+                <AssetEditor
+                  key="new"
+                  onSaved={(newId) => finishEditing(newId)}
+                  onCancel={() => finishEditing(null)}
+                />
+              ) : mode === 'edit' && selected ? (
+                <AssetEditor
+                  key={selected.id}
+                  asset={selected}
+                  onSaved={(savedId) => finishEditing(savedId)}
+                  onCancel={() => finishEditing(selected.id)}
+                />
+              ) : selected ? (
+                <AssetDetail
+                  asset={selected}
+                  onBack={() => selectAsset(null)}
+                  onEdit={() => startEdit(selected.id)}
+                />
               ) : id && status === 'ready' ? (
                 <Centered title="That asset is gone">
                   <p>It may have been deleted.</p>

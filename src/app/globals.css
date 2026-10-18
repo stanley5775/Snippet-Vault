@@ -18,6 +18,13 @@
   --t-css: #8b6fe0;
   --t-svg: #d4962c;
   --t-palette: #d6557a;
+
+    --syn-keyword: #d73a49;
+  --syn-string: #032f62;
+  --syn-comment: #6a737d;
+  --syn-constant: #005cc5;
+  --syn-function: #6f42c1;
+  --syn-tag: #22863a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -32,6 +39,13 @@
     --wash: #1c2342;
     --hover: #20252a;
     --danger: #ff7a7a;
+
+        --syn-keyword: #f97583;
+    --syn-string: #9ecbff;
+    --syn-comment: #7d8590;
+    --syn-constant: #79b8ff;
+    --syn-function: #b392f0;
+    --syn-tag: #85e89d;
   }
 }
 

@@ -1,17 +1,24 @@
 'use client';
 
-import { ArrowLeft, Copy, Star, Trash2 } from 'lucide-react';
+import { ArrowLeft, Copy, Pencil, Star, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { TYPE_LABEL } from '@/lib/assetTypes';
 import { copyText } from '@/lib/clipboard';
 import { useVaultStore } from '@/store';
 import type { Asset } from '@/types';
+import { AssetPreview } from './AssetPreview';
 import { CodeView } from './CodeView';
 
 const ghostButton =
   'rounded p-2 text-muted transition-colors hover:bg-hover hover:text-ink';
 
-export function AssetDetail({ asset, onBack }: { asset: Asset; onBack: () => void }) {
+interface Props {
+  asset: Asset;
+  onBack: () => void;
+  onEdit: () => void;
+}
+
+export function AssetDetail({ asset, onBack, onEdit }: Props) {
   const toggleFavorite = useVaultStore((s) => s.toggleFavorite);
   const removeAsset = useVaultStore((s) => s.removeAsset);
   const pushToast = useVaultStore((s) => s.pushToast);
@@ -74,6 +81,14 @@ export function AssetDetail({ asset, onBack }: { asset: Asset; onBack: () => voi
           </button>
           <button
             type="button"
+            aria-label="Edit asset"
+            onClick={onEdit}
+            className={ghostButton}
+          >
+            <Pencil className="size-4" />
+          </button>
+          <button
+            type="button"
             aria-label="Delete asset"
             onClick={handleDelete}
             className={ghostButton}
@@ -103,6 +118,7 @@ export function AssetDetail({ asset, onBack }: { asset: Asset; onBack: () => voi
               ))}
             </ul>
           )}
+          <AssetPreview type={asset.type} content={asset.content} />
           <div
             className={`overflow-hidden rounded-md border border-line bg-surface ${flash ? 'copy-flash' : ''}`}
             onAnimationEnd={() => setFlash(false)}
