@@ -5,9 +5,11 @@ import { useEffect, type ReactNode } from 'react';
 import { AssetDetail } from '@/components/assets/AssetDetail';
 import { AssetEditor } from '@/components/assets/AssetEditor';
 import { AssetList } from '@/components/assets/AssetList';
+import { SearchBar } from '@/components/SearchBar';
 import { Sidebar } from '@/components/Sidebar';
 import { StatusBar } from '@/components/StatusBar';
 import { useAssetList } from '@/hooks/useAssetList';
+import { useSearchResults } from '@/hooks/useSearchResults';
 import { useWorkspaceParams, type View } from '@/hooks/useWorkspaceParams';
 import { claimFirstRunSeed, seedExamples } from '@/lib/seed';
 import { useVaultStore } from '@/store';
@@ -44,13 +46,33 @@ function EmptyList({ view }: { view: View }) {
   );
 }
 
+function NoMatches({ query }: { query: string }) {
+  const setQuery = useVaultStore((s) => s.setQuery);
+  return (
+    <Centered title="No matches">
+      <p className="break-words">
+        Nothing matches “{query.trim()}”. Try fewer words, or remove a filter.
+      </p>
+      <button
+        type="button"
+        onClick={() => setQuery('')}
+        className="mt-3 text-accent hover:underline"
+      >
+        Clear search
+      </button>
+    </Centered>
+  );
+}
+
 export function Workspace() {
   const init = useVaultStore((s) => s.init);
   const status = useVaultStore((s) => s.status);
   const error = useVaultStore((s) => s.error);
+  const query = useVaultStore((s) => s.query);
   const assets = useAssetList();
   const { id, view, mode, selectAsset, setView, startNew, startEdit, finishEditing } =
     useWorkspaceParams();
+  const visible = useSearchResults(view);
   const selected = useVaultStore((s) => (id ? s.assets[id] : undefined));
 
   useEffect(() => {
@@ -63,16 +85,16 @@ export function Workspace() {
     if (claimFirstRunSeed(hasAssets)) void seedExamples().catch(() => undefined);
   }, [status]);
 
-  const favorites = assets.filter((a) => a.favorite);
-  const visible = view === 'favorites' ? favorites : assets;
+  const favoritesCount = assets.filter((a) => a.favorite).length;
   const detailOpen = Boolean(id) || mode === 'new';
+  const filtering = query.trim().length > 0;
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <Sidebar
           view={view}
-          counts={{ all: assets.length, favorites: favorites.length }}
+          counts={{ all: assets.length, favorites: favoritesCount }}
           onChange={setView}
           className={`${detailOpen ? 'hidden md:flex' : 'flex'} border-b md:border-b-0`}
         />
@@ -94,6 +116,7 @@ export function Workspace() {
                 <p className="p-4 text-sm text-muted">Loading your vault…</p>
               ) : (
                 <>
+                  <SearchBar />
                   <button
                     type="button"
                     onClick={startNew}
@@ -102,10 +125,12 @@ export function Workspace() {
                     <Plus className="size-4" />
                     New asset
                   </button>
-                  {visible.length === 0 ? (
-                    <EmptyList view={view} />
-                  ) : (
+                  {visible.length > 0 ? (
                     <AssetList assets={visible} selectedId={id} onSelect={selectAsset} />
+                  ) : filtering ? (
+                    <NoMatches query={query} />
+                  ) : (
+                    <EmptyList view={view} />
                   )}
                 </>
               )}
@@ -154,7 +179,10 @@ export function Workspace() {
           </>
         )}
       </div>
-      <StatusBar assetCount={assets.length} />
+      <StatusBar
+        assetCount={assets.length}
+        matchCount={filtering ? visible.length : undefined}
+      />
     </div>
   );
 }

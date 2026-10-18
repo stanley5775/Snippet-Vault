@@ -13,7 +13,13 @@ function Expiry({ toast }: { toast: Toast }) {
   return null;
 }
 
-export function StatusBar({ assetCount }: { assetCount: number }) {
+export function StatusBar({
+  assetCount,
+  matchCount,
+}: {
+  assetCount: number;
+  matchCount?: number;
+}) {
   const toasts = useVaultStore((s) => s.toasts);
   const dismiss = useVaultStore((s) => s.dismissToast);
   const current = toasts.at(-1);
@@ -57,7 +63,9 @@ export function StatusBar({ assetCount }: { assetCount: number }) {
           </>
         ) : (
           <span className="tabular-nums">
-            {assetCount} {assetCount === 1 ? 'asset' : 'assets'}
+            {matchCount === undefined
+              ? `${assetCount} ${assetCount === 1 ? 'asset' : 'assets'}`
+              : `${matchCount} of ${assetCount} ${assetCount === 1 ? 'asset' : 'assets'}`}
           </span>
         )}
       </div>

@@ -12,4 +12,7 @@ export const createUiSlice: SliceCreator<UiSlice> = (set) => ({
   },
 
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+
+  query: '',
+  setQuery: (query) => set({ query }),
 });

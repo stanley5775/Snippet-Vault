@@ -46,6 +46,8 @@ export interface UiSlice {
   toasts: Toast[];
   pushToast: (toast: ToastInput) => string;
   dismissToast: (id: string) => void;
+  query: string;
+  setQuery: (query: string) => void;
 }
 
 export type VaultState = LifecycleSlice & AssetsSlice & TemplatesSlice & UiSlice;
