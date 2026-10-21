@@ -1,6 +1,6 @@
-import { assetsRepo, templatesRepo } from '@/lib/db';
-import { byId } from '../utils';
+import { assetsRepo, importAll, templatesRepo } from '@/lib/db';
 import type { LifecycleSlice, SliceCreator } from '../types';
+import { byId, guarded } from '../utils';
 
 export const createLifecycleSlice: SliceCreator<LifecycleSlice> = (set, get) => ({
   status: 'idle',
@@ -23,4 +23,15 @@ export const createLifecycleSlice: SliceCreator<LifecycleSlice> = (set, get) => 
       });
     }
   },
+
+  applyImport: (plan) =>
+    guarded(get, 'import the backup', async () => {
+      const assets = [...plan.assets.add, ...plan.assets.update];
+      const templates = [...plan.templates.add, ...plan.templates.update];
+      await importAll(assets, templates);
+      set((s) => ({
+        assets: { ...s.assets, ...byId(assets) },
+        templates: { ...s.templates, ...byId(templates) },
+      }));
+    }),
 });

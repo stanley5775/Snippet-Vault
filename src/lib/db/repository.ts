@@ -115,3 +115,11 @@ export const templatesRepo = {
   restore: (template: StarterTemplate) => db.templates.put(template),
   bulkPut: (templates: StarterTemplate[]) => db.templates.bulkPut(templates),
 };
+
+/** Writes imported assets and templates in a single transaction. */
+export async function importAll(assets: Asset[], templates: StarterTemplate[]): Promise<void> {
+  await db.transaction('rw', db.assets, db.templates, async () => {
+    await db.assets.bulkPut(assets);
+    await db.templates.bulkPut(templates);
+  });
+}

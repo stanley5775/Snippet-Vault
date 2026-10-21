@@ -1,15 +1,20 @@
 'use client';
 
+import { useBackupLabel, useBackupStale } from '@/hooks/useBackupStatus';
 import type { View } from '@/hooks/useWorkspaceParams';
 
 interface Props {
   view: View;
   counts: { all: number; favorites: number; templates: number };
   onChange: (view: View) => void;
+  onOpenBackup: () => void;
   className?: string;
 }
 
-export function Sidebar({ view, counts, onChange, className = '' }: Props) {
+export function Sidebar({ view, counts, onChange, onOpenBackup, className = '' }: Props) {
+  const backupLabel = useBackupLabel();
+  const backupStale = useBackupStale(counts.all + counts.templates > 0);
+
   const items: { view: View; label: string; count: number }[] = [
     { view: 'all', label: 'All assets', count: counts.all },
     { view: 'favorites', label: 'Favorites', count: counts.favorites },
@@ -42,6 +47,16 @@ export function Sidebar({ view, counts, onChange, className = '' }: Props) {
           </button>
         );
       })}
+      <button
+        type="button"
+        onClick={onOpenBackup}
+        className="flex items-center justify-between gap-3 rounded px-2.5 py-1.5 text-left text-sm text-muted transition-colors hover:bg-hover hover:text-ink md:mt-auto"
+      >
+        Backup
+        <span className={`hidden text-xs md:inline ${backupStale ? 'text-accent' : ''}`}>
+          {backupLabel}
+        </span>
+      </button>
     </nav>
   );
 }

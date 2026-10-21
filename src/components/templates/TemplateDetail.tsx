@@ -1,8 +1,10 @@
 'use client';
 
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Download, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CommitInput } from '@/components/ui/CommitInput';
+import { downloadBlob } from '@/lib/export/download';
+import { planZip, zipBytes } from '@/lib/export/zip';
 import {
   DEFAULT_TEMPLATE_NAME,
   resolveTemplate,
@@ -16,6 +18,7 @@ import { TemplateItemRow } from './TemplateItemRow';
 const ghostButton =
   'rounded p-2 text-muted transition-colors hover:bg-hover hover:text-ink';
 const ignore = () => undefined;
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 type PickerState = null | { mode: 'add' } | { mode: 'swap'; assetId: string };
 
@@ -31,10 +34,14 @@ export function TemplateDetail({
   const removeTemplate = useVaultStore((s) => s.removeTemplate);
   const addTemplateAssets = useVaultStore((s) => s.addTemplateAssets);
   const swapTemplateItem = useVaultStore((s) => s.swapTemplateItem);
+  const pushToast = useVaultStore((s) => s.pushToast);
   const [picker, setPicker] = useState<PickerState>(null);
+  const [includeReadme, setIncludeReadme] = useState(true);
+  const [downloading, setDownloading] = useState(false);
 
   const resolved = useMemo(() => resolveTemplate(template, assets), [template, assets]);
   const issues = templateIssues(resolved);
+  const canDownload = resolved.length > 0 && issues.badPaths === 0 && !downloading;
 
   // A freshly created template starts with its name selected, ready to rename.
   const isNew = useRef(template.name === DEFAULT_TEMPLATE_NAME);
@@ -54,7 +61,34 @@ export function TemplateDetail({
     }
   }
 
-  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  async function handleDownload() {
+    const result = planZip(template, assets, { readme: includeReadme, now: new Date() });
+    if (!result.ok) {
+      pushToast({ message: result.reason, variant: 'error' });
+      return;
+    }
+    setDownloading(true);
+    try {
+      const bytes = await zipBytes(result.plan);
+      // copy into a fresh Uint8Array so the Blob constructor accepts it on every TypeScript version
+      downloadBlob(
+        new Blob([new Uint8Array(bytes)], { type: 'application/zip' }),
+        result.plan.filename,
+      );
+      const fileCount = result.plan.files.length - (result.plan.readmeIncluded ? 1 : 0);
+      const skipped = result.plan.skipped.length;
+      pushToast({
+        message: `Downloaded ${result.plan.filename} with ${plural(fileCount, 'file', 'files')}${
+          skipped > 0 ? `, ${skipped} skipped (deleted)` : ''
+        }`,
+        duration: 5000,
+      });
+    } catch {
+      pushToast({ message: "Couldn't create the ZIP.", variant: 'error' });
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -103,6 +137,26 @@ export function TemplateDetail({
 
       <div className="flex-1 overflow-y-auto px-5 py-6 md:px-8">
         <div className="max-w-3xl space-y-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <button
+              type="button"
+              disabled={!canDownload}
+              onClick={() => void handleDownload()}
+              className="inline-flex items-center gap-2 rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              <Download className="size-4" />
+              Download ZIP
+            </button>
+            <label className="inline-flex items-center gap-2 text-sm text-muted">
+              <input
+                type="checkbox"
+                checked={includeReadme}
+                onChange={(e) => setIncludeReadme(e.target.checked)}
+              />
+              Include a README
+            </label>
+          </div>
+
           {(issues.badPaths > 0 || issues.missing > 0) && (
             <div className="space-y-1 rounded-md border border-line bg-surface px-4 py-3 text-sm">
               {issues.badPaths > 0 && (

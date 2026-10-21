@@ -1,3 +1,4 @@
+import type { MergePlan } from '@/lib/backup/merge';
 import type { StateCreator } from 'zustand';
 import type { Asset, StarterTemplate } from '@/types';
 import type {
@@ -23,6 +24,7 @@ export interface LifecycleSlice {
   status: LoadStatus;
   error: string | null;
   init: () => Promise<void>;
+  applyImport: (plan: MergePlan) => Promise<void>;
 }
 
 export interface AssetsSlice {

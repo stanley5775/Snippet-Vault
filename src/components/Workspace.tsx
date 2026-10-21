@@ -24,6 +24,7 @@ import { copyAsset } from '@/lib/actions';
 import { seedExamples, claimFirstRunSeed } from '@/lib/seed';
 import { DEFAULT_TEMPLATE_NAME } from '@/lib/templates/items';
 import { useVaultStore } from '@/store';
+import { BackupDialog } from '@/components/BackupDialog';
 
 const primaryButton =
   'rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink transition-opacity hover:opacity-90';
@@ -99,6 +100,7 @@ export function Workspace() {
 
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+    const [backupOpen, setBackupOpen] = useState(false);
 
   useEffect(() => {
     void init();
@@ -206,7 +208,7 @@ export function Workspace() {
         ]
       : []),
   ];
-  useHotkeys(bindings, !paletteOpen && !helpOpen);
+  useHotkeys(bindings, !paletteOpen && !helpOpen && !backupOpen);
 
   const commands: PaletteCommand[] = [
     { id: 'new', group: 'Assets', label: 'New asset', keys: 'N', run: startNew },
@@ -268,6 +270,12 @@ export function Workspace() {
       run: () => void seedExamples().catch(() => undefined),
     },
     {
+      id: 'backup',
+      group: 'Vault',
+      label: 'Back up and restore…',
+      run: () => setBackupOpen(true),
+    },
+    {
       id: 'shortcuts',
       group: 'Help',
       label: 'Keyboard shortcuts',
@@ -309,6 +317,7 @@ export function Workspace() {
             templates: templateCount,
           }}
           onChange={setView}
+          onOpenBackup={() => setBackupOpen(true)}
           className={`${detailOpen ? 'hidden md:flex' : 'flex'} border-b md:border-b-0`}
         />
 
@@ -408,6 +417,7 @@ export function Workspace() {
         commands={commands}
       />
       <ShortcutsDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
+      {backupOpen && <BackupDialog onClose={() => setBackupOpen(false)} />}
     </div>
   );
 }

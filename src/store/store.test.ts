@@ -124,3 +124,25 @@ describe('template items', () => {
     expect(store().templates[t.id].items).toHaveLength(1);
   });
 });
+
+describe('import', () => {
+  it('writes a merge plan to Dexie and the store', async () => {
+    const asset = {
+      id: 'ast_imported',
+      type: 'snippet' as const,
+      title: 'Imported',
+      content: 'x',
+      language: 'ts',
+      tags: [],
+      favorite: false,
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    await store().applyImport({
+      assets: { add: [asset], update: [], unchanged: 0 },
+      templates: { add: [], update: [], unchanged: 0 },
+    });
+    expect(store().assets[asset.id]).toEqual(asset);
+    expect(await db.assets.get(asset.id)).toEqual(asset);
+  });
+});
