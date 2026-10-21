@@ -40,6 +40,8 @@ export function useWorkspaceParams() {
       update({ id: assetId, mode: null }, options?.replace),
     setView: (v: View) => update({ view: v === 'all' ? null : v, id: null, mode: null }),
     startNew: () => update({ id: null, mode: 'new' }),
+    openTemplate: (templateId: string) =>
+      update({ view: 'templates', id: templateId, mode: null }),
     startEdit: (assetId: string) => update({ id: assetId, mode: 'edit' }),
     /** Leaves the editor. Uses replace so Back doesn't return to a stale form. */
     finishEditing: (assetId: string | null) => update({ id: assetId, mode: null }, true),

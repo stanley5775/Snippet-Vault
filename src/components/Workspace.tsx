@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { AssetDetail } from '@/components/assets/AssetDetail';
 import { AssetEditor } from '@/components/assets/AssetEditor';
 import { AssetList } from '@/components/assets/AssetList';
@@ -13,26 +13,20 @@ import { SearchBar } from '@/components/SearchBar';
 import { ShortcutsDialog } from '@/components/ShortcutsDialog';
 import { Sidebar } from '@/components/Sidebar';
 import { StatusBar, type Hint } from '@/components/StatusBar';
+import { TemplatesView } from '@/components/templates/TemplatesView';
+import { Centered } from '@/components/ui/Centered';
 import { useAssetList } from '@/hooks/useAssetList';
 import { useHotkeys, type Hotkey } from '@/hooks/useHotkeys';
 import { useModLabel } from '@/hooks/useModLabel';
 import { useSearchResults } from '@/hooks/useSearchResults';
 import { useWorkspaceParams, type View } from '@/hooks/useWorkspaceParams';
 import { copyAsset } from '@/lib/actions';
-import { claimFirstRunSeed, seedExamples } from '@/lib/seed';
+import { seedExamples, claimFirstRunSeed } from '@/lib/seed';
+import { DEFAULT_TEMPLATE_NAME } from '@/lib/templates/items';
 import { useVaultStore } from '@/store';
 
 const primaryButton =
   'rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink transition-opacity hover:opacity-90';
-
-function Centered({ title, children }: { title: string; children?: ReactNode }) {
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
-      <h2 className="text-base font-semibold">{title}</h2>
-      {children && <div className="max-w-xs text-sm text-muted">{children}</div>}
-    </div>
-  );
-}
 
 function EmptyList({ view }: { view: View }) {
   if (view === 'favorites') {
@@ -85,9 +79,20 @@ export function Workspace() {
   const query = useVaultStore((s) => s.query);
   const toggleFavorite = useVaultStore((s) => s.toggleFavorite);
   const removeAsset = useVaultStore((s) => s.removeAsset);
+  const createTemplate = useVaultStore((s) => s.createTemplate);
+  const templateCount = useVaultStore((s) => Object.keys(s.templates).length);
   const assets = useAssetList();
-  const { id, view, mode, selectAsset, setView, startNew, startEdit, finishEditing } =
-    useWorkspaceParams();
+  const {
+    id,
+    view,
+    mode,
+    selectAsset,
+    setView,
+    startNew,
+    startEdit,
+    finishEditing,
+    openTemplate,
+  } = useWorkspaceParams();
   const visible = useSearchResults(view);
   const selected = useVaultStore((s) => (id ? s.assets[id] : undefined));
   const mod = useModLabel();
@@ -109,11 +114,12 @@ export function Workspace() {
 
   // While searching on desktop, keep the top result selected so Enter has a target.
   useEffect(() => {
-    if (!filtering || mode !== 'view' || visible.length === 0) return;
+    if (view === 'templates' || !filtering || mode !== 'view' || visible.length === 0)
+      return;
     if (visible.some((a) => a.id === id)) return;
     if (!window.matchMedia('(min-width: 768px)').matches) return;
     selectAsset(visible[0].id, { replace: true });
-  }, [filtering, mode, visible, id, selectAsset]);
+  }, [view, filtering, mode, visible, id, selectAsset]);
 
   const selectedIndex = visible.findIndex((a) => a.id === id);
 
@@ -169,6 +175,15 @@ export function Workspace() {
 
   function closeSelected() {
     if (id) selectAsset(null);
+  }
+
+  async function newTemplate() {
+    try {
+      const template = await createTemplate({ name: DEFAULT_TEMPLATE_NAME });
+      openTemplate(template.id);
+    } catch {
+      // the status bar already shows the error
+    }
   }
 
   const browsing = mode === 'view' && view !== 'templates';
@@ -227,6 +242,12 @@ export function Workspace() {
       disabled: !selected,
       run: () => void deleteSelected(),
     },
+    {
+      id: 'new-template',
+      group: 'Templates',
+      label: 'New template',
+      run: () => void newTemplate(),
+    },
     { id: 'go-all', group: 'Go to', label: 'All assets', run: () => setView('all') },
     {
       id: 'go-favorites',
@@ -256,18 +277,20 @@ export function Workspace() {
   ];
 
   const hints: Hint[] = [
-    ...(mode !== 'view'
-      ? [{ keys: mod('S'), label: 'save' }]
-      : selected
-        ? [
-            { keys: 'Enter', label: 'copy' },
-            { keys: 'E', label: 'edit' },
-            { keys: 'F', label: 'favorite' },
-          ]
-        : [
-            { keys: 'N', label: 'new' },
-            { keys: '/', label: 'search' },
-          ]),
+    ...(view === 'templates'
+      ? []
+      : mode !== 'view'
+        ? [{ keys: mod('S'), label: 'save' }]
+        : selected
+          ? [
+              { keys: 'Enter', label: 'copy' },
+              { keys: 'E', label: 'edit' },
+              { keys: 'F', label: 'favorite' },
+            ]
+          : [
+              { keys: 'N', label: 'new' },
+              { keys: '/', label: 'search' },
+            ]),
     { keys: mod('K'), label: 'commands' },
     ...(mode === 'view' ? [{ keys: '?', label: 'shortcuts' }] : []),
   ];
@@ -280,17 +303,26 @@ export function Workspace() {
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <Sidebar
           view={view}
-          counts={{ all: assets.length, favorites: favoritesCount }}
+          counts={{
+            all: assets.length,
+            favorites: favoritesCount,
+            templates: templateCount,
+          }}
           onChange={setView}
           className={`${detailOpen ? 'hidden md:flex' : 'flex'} border-b md:border-b-0`}
         />
 
         {view === 'templates' ? (
-          <div className="flex flex-1 bg-panel">
-            <Centered title="Project Starter">
-              Bundle your snippets into a downloadable ZIP. Coming soon.
-            </Centered>
-          </div>
+          status === 'ready' ? (
+            <TemplatesView
+              selectedId={id}
+              onSelect={selectAsset}
+              onCreate={() => void newTemplate()}
+              detailOpen={detailOpen}
+            />
+          ) : (
+            <p className="flex-1 bg-panel p-4 text-sm text-muted">Loading your vault…</p>
+          )
         ) : (
           <>
             <section
@@ -367,7 +399,7 @@ export function Workspace() {
       </div>
       <StatusBar
         assetCount={assets.length}
-        matchCount={filtering ? visible.length : undefined}
+        matchCount={filtering && view !== 'templates' ? visible.length : undefined}
         hints={hints}
       />
       <CommandPalette
@@ -379,4 +411,3 @@ export function Workspace() {
     </div>
   );
 }
-

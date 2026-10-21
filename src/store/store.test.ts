@@ -74,3 +74,53 @@ describe('templates', () => {
     expect(store().templates[t.id]?.name).toBe('Starter');
   });
 });
+
+describe('template items', () => {
+  it('adds assets with suggested paths and persists them', async () => {
+    const a = await store().createAsset({
+      type: 'snippet',
+      title: 'Auth middleware',
+      content: 'x',
+      language: 'ts',
+    });
+    const b = await store().createAsset({ type: 'css', title: 'Fade in', content: 'y' });
+    const t = await store().createTemplate({ name: 'Starter' });
+
+    await store().addTemplateAssets(t.id, [a.id, b.id, a.id]);
+
+    expect(store().templates[t.id].items.map((i) => i.path)).toEqual([
+      'auth-middleware.ts',
+      'fade-in.css',
+    ]);
+    expect((await db.templates.get(t.id))?.items).toHaveLength(2);
+  });
+
+  it('keeps a frozen copy after the asset is deleted', async () => {
+    const a = await store().createAsset({
+      type: 'snippet',
+      title: 'Keep me',
+      content: 'original',
+    });
+    const t = await store().createTemplate({ name: 'Starter' });
+    await store().addTemplateAssets(t.id, [a.id]);
+    await store().setTemplateItemFrozen(t.id, a.id, true);
+    await store().removeAsset(a.id);
+
+    const item = store().templates[t.id].items[0];
+    expect(item.frozenContent).toBe('original');
+    expect(store().assets[a.id]).toBeUndefined();
+  });
+
+  it('removes and reorders items', async () => {
+    const a = await store().createAsset({ type: 'snippet', title: 'A', content: '1' });
+    const b = await store().createAsset({ type: 'snippet', title: 'B', content: '2' });
+    const t = await store().createTemplate({ name: 'Starter' });
+    await store().addTemplateAssets(t.id, [a.id, b.id]);
+
+    await store().moveTemplateItem(t.id, b.id, -1);
+    expect(store().templates[t.id].items.find((i) => i.order === 0)?.assetId).toBe(b.id);
+
+    await store().removeTemplateItem(t.id, a.id);
+    expect(store().templates[t.id].items).toHaveLength(1);
+  });
+});

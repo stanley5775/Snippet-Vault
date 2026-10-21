@@ -4,16 +4,16 @@ import type { View } from '@/hooks/useWorkspaceParams';
 
 interface Props {
   view: View;
-  counts: { all: number; favorites: number };
+  counts: { all: number; favorites: number; templates: number };
   onChange: (view: View) => void;
   className?: string;
 }
 
 export function Sidebar({ view, counts, onChange, className = '' }: Props) {
-  const items: { view: View; label: string; count?: number }[] = [
+  const items: { view: View; label: string; count: number }[] = [
     { view: 'all', label: 'All assets', count: counts.all },
     { view: 'favorites', label: 'Favorites', count: counts.favorites },
-    { view: 'templates', label: 'Templates' },
+    { view: 'templates', label: 'Templates', count: counts.templates },
   ];
 
   return (
@@ -38,9 +38,7 @@ export function Sidebar({ view, counts, onChange, className = '' }: Props) {
             }`}
           >
             {item.label}
-            {item.count !== undefined && (
-              <span className="text-xs text-muted tabular-nums">{item.count}</span>
-            )}
+            <span className="text-xs text-muted tabular-nums">{item.count}</span>
           </button>
         );
       })}

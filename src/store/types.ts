@@ -40,6 +40,24 @@ export interface TemplatesSlice {
   updateTemplate: (id: string, patch: TemplatePatch) => Promise<StarterTemplate>;
   removeTemplate: (id: string) => Promise<void>;
   restoreTemplate: (template: StarterTemplate) => Promise<void>;
+  addTemplateAssets: (templateId: string, assetIds: string[]) => Promise<void>;
+  removeTemplateItem: (templateId: string, assetId: string) => Promise<void>;
+  moveTemplateItem: (templateId: string, assetId: string, delta: -1 | 1) => Promise<void>;
+  setTemplateItemPath: (
+    templateId: string,
+    assetId: string,
+    path: string,
+  ) => Promise<void>;
+  setTemplateItemFrozen: (
+    templateId: string,
+    assetId: string,
+    frozen: boolean,
+  ) => Promise<void>;
+  swapTemplateItem: (
+    templateId: string,
+    oldAssetId: string,
+    newAssetId: string,
+  ) => Promise<void>;
 }
 
 export interface UiSlice {
