@@ -31,7 +31,10 @@ export function AssetList({ assets, selectedId, onSelect }: Props) {
       {assets.map((a) => {
         const selected = a.id === selectedId;
         return (
-          <li key={a.id} className="border-b border-line">
+          <li
+            key={a.id}
+            className="border-b border-line [contain-intrinsic-size:auto_58px] [content-visibility:auto]"
+          >
             <button
               type="button"
               id={`asset-row-${a.id}`}

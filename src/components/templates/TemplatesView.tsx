@@ -37,6 +37,7 @@ export function TemplatesView({ selectedId, onSelect, onCreate, detailOpen }: Pr
   return (
     <>
       <section
+        aria-label="Templates"
         className={`${detailOpen ? 'hidden md:flex' : 'flex'} min-h-0 flex-1 flex-col bg-panel md:w-80 md:flex-none md:border-r md:border-line`}
       >
         <button
@@ -94,7 +95,9 @@ export function TemplatesView({ selectedId, onSelect, onCreate, detailOpen }: Pr
       </section>
 
       <main
-        className={`${detailOpen ? 'flex' : 'hidden md:flex'} min-h-0 min-w-0 flex-1 flex-col bg-panel`}
+        id="main"
+        tabIndex={-1}
+        className={`${detailOpen ? 'flex' : 'hidden md:flex'} min-h-0 min-w-0 flex-1 flex-col bg-panel focus:outline-none`}
       >
         {selected ? (
           <TemplateDetail

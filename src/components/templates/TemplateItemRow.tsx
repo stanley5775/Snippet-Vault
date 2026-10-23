@@ -16,8 +16,9 @@ interface Props {
 }
 
 const arrowButton =
-  'rounded p-1 text-muted transition-colors hover:bg-hover hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent';
-const textButton = 'text-xs text-muted hover:text-ink hover:underline';
+  'rounded p-1 text-muted transition-colors hover:bg-hover hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent pointer-coarse:p-2.5';
+const textButton =
+  'text-xs text-muted hover:text-ink hover:underline pointer-coarse:py-2';
 
 export function TemplateItemRow({
   templateId,

@@ -73,6 +73,27 @@ function focusSearch() {
   el?.select();
 }
 
+function VaultError({
+  message,
+  onRetry,
+}: {
+  message: string | null;
+  onRetry: () => void;
+}) {
+  return (
+    <Centered title="Couldn't open your vault">
+      <p>
+        Your browser may be blocking local storage. Private browsing or strict site-data
+        settings can cause this.
+      </p>
+      {message && <p className="mt-2 text-xs break-words">{message}</p>}
+      <button type="button" onClick={onRetry} className={`${primaryButton} mt-4`}>
+        Try again
+      </button>
+    </Centered>
+  );
+}
+
 export function Workspace() {
   const init = useVaultStore((s) => s.init);
   const status = useVaultStore((s) => s.status);
@@ -282,6 +303,23 @@ export function Workspace() {
       keys: '?',
       run: () => setHelpOpen(true),
     },
+
+    ...(process.env.NODE_ENV === 'development'
+      ? [
+          {
+            id: 'dev-add',
+            group: 'Dev',
+            label: 'Add 5,000 test assets',
+            run: () => void import('@/lib/devTools').then((m) => m.addTestAssets()),
+          },
+          {
+            id: 'dev-remove',
+            group: 'Dev',
+            label: 'Remove test assets',
+            run: () => void import('@/lib/devTools').then((m) => m.removeTestAssets()),
+          },
+        ]
+      : []),
   ];
 
   const hints: Hint[] = [
@@ -308,6 +346,13 @@ export function Workspace() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-accent focus:px-3 focus:py-1.5 focus:text-sm focus:text-accent-ink"
+      >
+        Skip to content
+      </a>
+
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <Sidebar
           view={view}
@@ -329,16 +374,21 @@ export function Workspace() {
               onCreate={() => void newTemplate()}
               detailOpen={detailOpen}
             />
+          ) : status === 'error' ? (
+            <div className="flex flex-1 bg-panel">
+              <VaultError message={error} onRetry={() => void init()} />
+            </div>
           ) : (
             <p className="flex-1 bg-panel p-4 text-sm text-muted">Loading your vault…</p>
           )
         ) : (
           <>
             <section
+              aria-label="Assets"
               className={`${detailOpen ? 'hidden md:flex' : 'flex'} min-h-0 flex-1 flex-col bg-panel md:w-80 md:flex-none md:border-r md:border-line`}
             >
               {status === 'error' ? (
-                <p className="p-4 text-sm text-danger">{error}</p>
+                <VaultError message={error} onRetry={() => void init()} />
               ) : status !== 'ready' ? (
                 <p className="p-4 text-sm text-muted">Loading your vault…</p>
               ) : (
@@ -364,7 +414,9 @@ export function Workspace() {
             </section>
 
             <main
-              className={`${detailOpen ? 'flex' : 'hidden md:flex'} min-h-0 min-w-0 flex-1 flex-col bg-panel`}
+              id="main"
+              tabIndex={-1}
+              className={`${detailOpen ? 'flex' : 'hidden md:flex'} min-h-0 min-w-0 flex-1 flex-col bg-panel focus:outline-none`}
             >
               {mode === 'new' ? (
                 <AssetEditor

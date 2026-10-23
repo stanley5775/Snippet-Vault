@@ -112,18 +112,19 @@ body {
   }
 }
 
-/* Copy confirmation: a brief outline on the code block
-@keyframes copy-flash {
-  from { box-shadow: 0 0 0 2px var(--accent); }
-  to { box-shadow: 0 0 0 2px transparent; }
-}
-.copy-flash {
-  animation: copy-flash 700ms ease-out;
-} */
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* Comfortable tap targets for header and navigation buttons on touch screens */
+@media (pointer: coarse) {
+  header button,
+  nav button {
+    min-height: 44px;
+    min-width: 44px;
   }
 }

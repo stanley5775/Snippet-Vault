@@ -23,6 +23,7 @@ export function Sidebar({ view, counts, onChange, onOpenBackup, className = '' }
 
   return (
     <nav
+      aria-label="Library"
       className={`gap-0.5 border-line bg-surface p-2 md:w-48 md:flex-col md:border-r md:p-3 ${className}`}
     >
       <p className="hidden px-2.5 pt-1 pb-4 text-[15px] font-semibold tracking-tight md:block">

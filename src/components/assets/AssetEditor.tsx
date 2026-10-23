@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { TagInput } from '@/components/ui/TagInput';
 import { TYPE_LABEL } from '@/lib/assetTypes';
 import { defaultLanguageFor, KNOWN_LANGUAGES, normalizeLanguage } from '@/lib/languages';
@@ -40,6 +40,34 @@ export function AssetEditor({ asset, onSaved, onCancel }: Props) {
   const [content, setContent] = useState(asset?.content ?? '');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // The values the form started with, captured once
+  const [initial] = useState(() => ({
+    type,
+    title,
+    language,
+    description,
+    content,
+    tags: tags.join(','),
+  }));
+  const dirty =
+    type !== initial.type ||
+    title !== initial.title ||
+    language !== initial.language ||
+    description !== initial.description ||
+    content !== initial.content ||
+    tags.join(',') !== initial.tags;
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+
+  function cancel() {
+    if (!dirty || window.confirm('Discard your changes?')) onCancel();
+  }
 
   const isKnown = (KNOWN_LANGUAGES as readonly string[]).includes(language);
   const selectValue = isKnown ? language : OTHER;
@@ -103,7 +131,7 @@ export function AssetEditor({ asset, onSaved, onCancel }: Props) {
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
-            onClick={onCancel}
+            onClick={cancel}
             className="rounded px-3 py-1.5 text-sm text-muted transition-colors hover:bg-hover hover:text-ink"
           >
             Cancel
