@@ -123,7 +123,8 @@ body {
 /* Comfortable tap targets for header and navigation buttons on touch screens */
 @media (pointer: coarse) {
   header button,
-  nav button {
+  nav button,
+  nav a {
     min-height: 44px;
     min-width: 44px;
   }

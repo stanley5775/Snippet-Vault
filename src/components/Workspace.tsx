@@ -25,6 +25,10 @@ import { seedExamples, claimFirstRunSeed } from '@/lib/seed';
 import { DEFAULT_TEMPLATE_NAME } from '@/lib/templates/items';
 import { useVaultStore } from '@/store';
 import { BackupDialog } from '@/components/BackupDialog';
+import { useRouter } from 'next/navigation';
+import { WelcomePanel } from '@/components/WelcomePanel';
+import { useWelcomeDismissed } from '@/hooks/useWelcomeDismissed';
+import { FEEDBACK_URL } from '@/lib/site';
 
 const primaryButton =
   'rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink transition-opacity hover:opacity-90';
@@ -95,6 +99,8 @@ function VaultError({
 }
 
 export function Workspace() {
+    const router = useRouter();
+    const welcomeDismissed = useWelcomeDismissed();
   const init = useVaultStore((s) => s.init);
   const status = useVaultStore((s) => s.status);
   const error = useVaultStore((s) => s.error);
@@ -303,6 +309,18 @@ export function Workspace() {
       keys: '?',
       run: () => setHelpOpen(true),
     },
+    {
+      id: 'docs',
+      group: 'Help',
+      label: 'Open documentation',
+      run: () => router.push('/docs'),
+    },
+    {
+      id: 'feedback',
+      group: 'Help',
+      label: 'Send feedback',
+      run: () => window.open(FEEDBACK_URL, '_blank', 'noopener,noreferrer'),
+    },
 
     ...(process.env.NODE_ENV === 'development'
       ? [
@@ -448,6 +466,8 @@ export function Workspace() {
                     Back to the list
                   </button>
                 </Centered>
+              ) : status === 'ready' && !welcomeDismissed ? (
+                <WelcomePanel />
               ) : (
                 <Centered title="Pick an asset">
                   Choose one from the list to read and copy it. Everything you save stays

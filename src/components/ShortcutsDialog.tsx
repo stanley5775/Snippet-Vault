@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { Kbd } from '@/components/ui/Kbd';
 import { useModLabel } from '@/hooks/useModLabel';
+import { SHORTCUT_GROUPS } from '@/lib/shortcuts';
 
 export function ShortcutsDialog({
   open,
@@ -21,44 +22,6 @@ export function ShortcutsDialog({
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
-  const groups: { title: string; rows: [string, string][] }[] = [
-    {
-      title: 'Anywhere',
-      rows: [
-        [mod('K'), 'Open the command palette'],
-        ['/', 'Focus the search box'],
-        ['N', 'New asset'],
-        ['?', 'Show this list'],
-      ],
-    },
-    {
-      title: 'With an asset selected',
-      rows: [
-        ['J / K', 'Next or previous asset'],
-        ['Enter', 'Copy'],
-        ['E', 'Edit'],
-        ['F', 'Toggle favorite'],
-        ['Delete', 'Delete (Undo is offered)'],
-        ['Esc', 'Close the asset'],
-      ],
-    },
-    {
-      title: 'In the search box',
-      rows: [
-        ['↑ ↓', 'Move through results'],
-        ['Enter', 'Copy the highlighted result'],
-        ['Esc', 'Clear, then leave the box'],
-      ],
-    },
-    {
-      title: 'While editing',
-      rows: [
-        [mod('S'), 'Save'],
-        ['Tab', 'Move to the next field'],
-      ],
-    },
-  ];
-
   return (
     <dialog
       ref={ref}
@@ -74,17 +37,17 @@ export function ShortcutsDialog({
           Single-letter keys work whenever you are not typing in a field.
         </p>
         <div className="mt-4 space-y-5">
-          {groups.map((group) => (
+          {SHORTCUT_GROUPS.map((group) => (
             <section key={group.title}>
               <h3 className="mb-1 text-xs font-medium text-muted">{group.title}</h3>
               <ul>
-                {group.rows.map(([keys, label]) => (
+                {group.rows.map((row) => (
                   <li
-                    key={label}
+                    key={row.label}
                     className="flex items-center justify-between py-1.5 text-sm"
                   >
-                    <span>{label}</span>
-                    <Kbd>{keys}</Kbd>
+                    <span>{row.label}</span>
+                    <Kbd>{row.mod ? mod(row.mod) : (row.keys ?? '')}</Kbd>
                   </li>
                 ))}
               </ul>

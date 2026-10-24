@@ -1,5 +1,9 @@
 # Snippet Vault
 
+[Try it live](https://snippet-vault-eight-pi.vercel.app/) and read the [documentation](https://snippet-vault-eight-pi.vercel.app/docs).
+
+
+
 A local-first vault for the things developers and designers keep copy-pasting: code snippets, Tailwind class lists, CSS keyframes, SVG icons, and color palettes. Save, tag, search, and copy them without leaving the keyboard.
 
 Everything is stored in your browser (IndexedDB). There is no account and no server-side storage.
